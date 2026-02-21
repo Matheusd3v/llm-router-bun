@@ -3,7 +3,7 @@
 > Prompt-routing decision engine built on **Bun + Elysia**.  
 > Automatically selects the best LLM model per request — balancing cost, latency and quality — without any external classification API.
 
-![CI](https://github.com/your-org/llm-router/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/Matheusd3v/llm-router-bun/actions/workflows/ci.yml/badge.svg)
 ![Bun](https://img.shields.io/badge/runtime-Bun-black?logo=bun)
 ![TypeScript](https://img.shields.io/badge/language-TypeScript-3178c6?logo=typescript)
 ![License](https://img.shields.io/badge/license-MIT-green)
