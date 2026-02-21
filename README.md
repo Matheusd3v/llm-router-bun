@@ -61,14 +61,14 @@ This router solves both without any external calls in the critical path:
 
 ## Stack
 
-| Layer         | Technology                                  |
-| ------------- | ------------------------------------------- |
-| Runtime       | Bun                                         |
-| HTTP          | Elysia                                      |
-| Cache         | Redis (Bun native client)                   |
-| Vector store  | Qdrant (HNSW · Cosine)                      |
-| Audit log     | Postgres (Bun `sql` template)               |
-| Embeddings    | `@huggingface/transformers` ONNX in-process |
+| Layer         | Technology                                          |
+| ------------- | --------------------------------------------------- |
+| Runtime       | Bun                                                 |
+| HTTP          | Elysia                                              |
+| Cache         | Redis (Bun native client)                           |
+| Vector store  | Qdrant (HNSW · Cosine)                              |
+| Audit log     | Postgres (Bun `sql` template)                       |
+| Embeddings    | `@huggingface/transformers` ONNX in-process         |
 | LLM providers | OpenRouter · Google · Anthropic · OpenAI · DeepSeek |
 
 ---
