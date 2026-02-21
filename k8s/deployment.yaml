@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-router
+  namespace: llm-router
+  labels:
+    app: llm-router
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: llm-router
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0 # zero-downtime deploy
+  template:
+    metadata:
+      labels:
+        app: llm-router
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: llm-router
+        image: ghcr.io/matheusd3v/llm-router-bun:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: llm-router-config
+        env:
+        - name: OPENROUTER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llm-router-secrets
+              key: OPENROUTER_API_KEY
+        - name: GOOGLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llm-router-secrets
+              key: GOOGLE_API_KEY
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llm-router-secrets
+              key: ANTHROPIC_API_KEY
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llm-router-secrets
+              key: OPENAI_API_KEY
+        - name: DEEPSEEK_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llm-router-secrets
+              key: DEEPSEEK_API_KEY
+        volumeMounts:
+        - name: models-cache
+          mountPath: /app/models
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi" # ONNX pipeline lives in memory
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 20 # wait for ONNX warmup
+          periodSeconds: 15
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          failureThreshold: 2
+      volumes:
+      - name: models-cache
+        persistentVolumeClaim:
+          claimName: llm-router-models-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llm-router-models-pvc
+  namespace: llm-router
+spec:
+  accessModes:
+  - ReadWriteMany # RWX required for multiple replicas sharing the ONNX cache
+  resources:
+    requests:
+      storage: 1Gi # multilingual-e5-small q8 ~150MB

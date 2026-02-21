@@ -19,6 +19,8 @@
     - [`openrouter` (default)](#openrouter-default)
     - [`google`](#google)
     - [`anthropic`](#anthropic)
+    - [`openai`](#openai)
+    - [`deepseek`](#deepseek)
 - [Categories](#categories)
 - [API](#api)
     - [`POST /complete`](#post-complete)
@@ -35,6 +37,7 @@
 - [Performance (estimates)](#performance-estimates)
 - [Security & data sensitivity](#security--data-sensitivity)
 - [Troubleshooting](#troubleshooting)
+- [Kubernetes](#kubernetes)
 
 ---
 
@@ -139,6 +142,21 @@ Set `LLM_PROVIDER` to select the active provider. Each provider owns its model c
 | ----------------- | ------- | ---------- | ------------------- |
 | Claude Haiku 4.5  | general | $0.80      | simple, code        |
 | Claude Sonnet 4.5 | hard    | $3.00      | reasoning, creative |
+
+### `openai`
+
+| Model       | Tier    | Cost/1M in | Strengths       |
+| ----------- | ------- | ---------- | --------------- |
+| GPT-4o Mini | general | $0.15      | simple, code    |
+| GPT-4o      | medium  | $2.50      | code, reasoning |
+| o4-mini     | hard    | $3.00      | reasoning, code |
+
+### `deepseek`
+
+| Model          | Tier    | Cost/1M in | Strengths                                    |
+| -------------- | ------- | ---------- | -------------------------------------------- |
+| DeepSeek V3 ⚠️ | general | $0.07      | code _(blocked for sensitive/internal)_      |
+| DeepSeek R1 ⚠️ | hard    | $0.55      | reasoning _(blocked for sensitive/internal)_ |
 
 ---
 
@@ -341,3 +359,49 @@ Providers blocked for `internal`/`sensitive`: **DeepSeek V3** (data may leave tr
 **Qdrant dimension mismatch**
 
 > If you swap the embedding model, the vector dimension changes. Drop the collection and re-run the seed.
+
+---
+
+## Kubernetes
+
+Manifests live in `k8s/`.
+
+```
+k8s/
+├── namespace.yaml          # llm-router namespace
+├── configmap.yaml          # non-secret env vars
+├── secret.yaml             # API keys — fill in and keep out of git
+├── deployment.yaml         # app Deployment + ONNX models PVC (RWX)
+├── service.yaml            # ClusterIP → port 80
+├── hpa.yaml                # HPA cpu 70% / mem 80%, 2–6 replicas
+└── infra/
+    ├── qdrant-statefulset.yaml
+    ├── redis-deployment.yaml
+    └── postgres-statefulset.yaml
+```
+
+```bash
+# 1. Namespace + infra
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/infra/
+
+# 2. Fill in secrets then apply
+# edit k8s/secret.yaml with real API keys
+kubectl apply -f k8s/secret.yaml
+
+# 3. Application
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/hpa.yaml
+
+# 4. Run DB migration (once)
+kubectl run migrate --rm -it \
+  --image=postgres:16-alpine \
+  --env="PGPASSWORD=router" \
+  -- psql -h postgres.llm-router.svc -U router llm_router \
+     -f /dev/stdin < migrations/001_create_classification_logs.sql
+
+# 5. Seed the classifier
+kubectl exec -n llm-router deploy/llm-router -- bun scripts/seed-classifier.ts
+```
