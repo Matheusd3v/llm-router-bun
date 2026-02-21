@@ -1,0 +1,20 @@
+# bunfig.toml
+[env]
+# ── Provider selection ──────────────────────────────────────────────────────
+# openrouter (default) | google | anthropic | openai
+LLM_PROVIDER       = "openrouter"
+
+# ── API keys (fill in the one matching LLM_PROVIDER) ───────────────────────
+OPENROUTER_API_KEY = ""
+GOOGLE_API_KEY     = ""
+ANTHROPIC_API_KEY  = ""
+
+# ── Local infra ─────────────────────────────────────────────────────────────
+QDRANT_URL         = "http://localhost:6333"
+REDIS_URL          = "redis://localhost:6379"   # Bun redis nativo lê automaticamente
+DATABASE_URL       = "postgres://router:router@localhost:5432/llm_router"
+MODELS_CACHE_DIR   = "./models"
+HF_MODEL_NAME      = "Xenova/multilingual-e5-small"
+
+[run]
+bun = true

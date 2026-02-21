@@ -1,15 +1,26 @@
 {
-  "name": "llm-router",
-  "version": "1.0.50",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts"
-  },
-  "dependencies": {
-    "elysia": "latest"
-  },
-  "devDependencies": {
-    "bun-types": "latest"
-  },
-  "module": "src/index.js"
+    "name": "llm-router",
+    "version": "1.0.50",
+    "module": "src/index.ts",
+    "type": "module",
+    "author": {
+        "name": "Matheus Gomes"
+    },
+    "scripts": {
+        "dev": "bun --watch src/index.ts",
+        "start": "bun src/index.ts",
+        "seed": "bun scripts/seed-classifier.ts",
+        "test": "bun test",
+        "test:watch": "bun test --watch",
+        "test:coverage": "bun test --coverage"
+    },
+    "dependencies": {
+        "elysia": "^1.4.25",
+        "@qdrant/js-client-rest": "^1.17.0",
+        "@huggingface/transformers": "^3.8.1",
+        "openai": "^6.22.0"
+    },
+    "devDependencies": {
+        "@types/bun": "latest"
+    }
 }
