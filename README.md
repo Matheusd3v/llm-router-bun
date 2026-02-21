@@ -69,7 +69,7 @@ This router solves both without any external calls in the critical path:
 | Vector store  | Qdrant (HNSW · Cosine)                      |
 | Audit log     | Postgres (Bun `sql` template)               |
 | Embeddings    | `@huggingface/transformers` ONNX in-process |
-| LLM providers | OpenRouter · Google · Anthropic             |
+| LLM providers | OpenRouter · Google · Anthropic · OpenAI · DeepSeek |
 
 ---
 
@@ -132,7 +132,7 @@ Set `LLM_PROVIDER` to select the active provider. Each provider owns its model c
 
 | Model                 | Tier    | Cost/1M in | Strengths             |
 | --------------------- | ------- | ---------- | --------------------- |
-| Gemini 2.0 Flash Lite | general | $0.075     | simple, data_analysis |
+| Gemini 2.5 Flash Lite | general | $0.07      | simple, data_analysis |
 | Gemini 2.5 Flash      | medium  | $0.10      | code, data_analysis   |
 | Gemini 2.5 Pro        | hard    | $1.25      | reasoning, creative   |
 
@@ -257,11 +257,15 @@ bun install
 ### 3. Configure environment
 
 ```env
-LLM_PROVIDER=openrouter           # openrouter | google | anthropic
+# openrouter | google | anthropic | openai | deepseek
+LLM_PROVIDER=openrouter
 
+# fill in only the provider(s) you intend to use
 OPENROUTER_API_KEY=sk-or-...
-GOOGLE_API_KEY=...
+GOOGLE_API_KEY=AIza...
 ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+DEEPSEEK_API_KEY=sk-...
 
 QDRANT_URL=http://localhost:6333
 REDIS_URL=redis://localhost:6379
@@ -338,7 +342,7 @@ The dominant latency in `/complete` is always the **LLM response itself**, not t
 | `internal`  | Only providers with `supportsSensitive = true`       |
 | `sensitive` | Same as `internal` — use for PII / confidential data |
 
-Providers blocked for `internal`/`sensitive`: **DeepSeek V3** (data may leave trusted regions).
+Providers blocked for `internal`/`sensitive`: **DeepSeek V3** and **DeepSeek R1** — both `openrouter` and `deepseek` provider (data may leave trusted regions).
 
 ---
 
@@ -368,9 +372,11 @@ Manifests live in `k8s/`.
 
 ```
 k8s/
+├── deploy.sh               # one-command deploy (run this)
+├── secret.yaml.example     # copy to secret.yaml and fill in keys
 ├── namespace.yaml          # llm-router namespace
 ├── configmap.yaml          # non-secret env vars
-├── secret.yaml             # API keys — fill in and keep out of git
+├── secret.yaml             # API keys — keep out of git (.gitignore'd)
 ├── deployment.yaml         # app Deployment + ONNX models PVC (RWX)
 ├── service.yaml            # ClusterIP → port 80
 ├── hpa.yaml                # HPA cpu 70% / mem 80%, 2–6 replicas
@@ -381,27 +387,9 @@ k8s/
 ```
 
 ```bash
-# 1. Namespace + infra
-kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/infra/
-
-# 2. Fill in secrets then apply
-# edit k8s/secret.yaml with real API keys
-kubectl apply -f k8s/secret.yaml
-
-# 3. Application
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
-kubectl apply -f k8s/hpa.yaml
-
-# 4. Run DB migration (once)
-kubectl run migrate --rm -it \
-  --image=postgres:16-alpine \
-  --env="PGPASSWORD=router" \
-  -- psql -h postgres.llm-router.svc -U router llm_router \
-     -f /dev/stdin < migrations/001_create_classification_logs.sql
-
-# 5. Seed the classifier
-kubectl exec -n llm-router deploy/llm-router -- bun scripts/seed-classifier.ts
+cp k8s/secret.yaml.example k8s/secret.yaml
+# fill in the API keys in k8s/secret.yaml
+./k8s/deploy.sh
 ```
+
+The script handles everything in order: namespace → infra (with readiness wait) → secrets → app → DB migration → classifier seed.
