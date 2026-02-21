@@ -15,28 +15,28 @@ spec:
         app: qdrant
     spec:
       containers:
-        - name: qdrant
-          image: qdrant/qdrant:v1.9.0
-          ports:
-            - containerPort: 6333
-          volumeMounts:
-            - name: qdrant-storage
-              mountPath: /qdrant/storage
-          resources:
-            requests:
-              cpu: "250m"
-              memory: "512Mi"
-            limits:
-              cpu: "1000m"
-              memory: "2Gi"
-  volumeClaimTemplates:
-    - metadata:
-        name: qdrant-storage
-      spec:
-        accessModes: ["ReadWriteOnce"]
+      - name: qdrant
+        image: qdrant/qdrant:v1.9.0
+        ports:
+        - containerPort: 6333
+        volumeMounts:
+        - name: qdrant-storage
+          mountPath: /qdrant/storage
         resources:
           requests:
-            storage: 5Gi
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "2Gi"
+  volumeClaimTemplates:
+  - metadata:
+      name: qdrant-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 5Gi
 ---
 apiVersion: v1
 kind: Service
@@ -47,6 +47,6 @@ spec:
   selector:
     app: qdrant
   ports:
-    - port: 6333
-      targetPort: 6333
+  - port: 6333
+    targetPort: 6333
   type: ClusterIP

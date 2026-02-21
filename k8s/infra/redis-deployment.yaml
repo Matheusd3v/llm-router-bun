@@ -14,25 +14,25 @@ spec:
         app: redis
     spec:
       containers:
-        - name: redis
-          image: redis:7-alpine
-          ports:
-            - containerPort: 6379
-          args: ["--save", "60", "1", "--loglevel", "warning"]
-          volumeMounts:
-            - name: redis-data
-              mountPath: /data
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "500m"
-              memory: "256Mi"
-      volumes:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        args: [ "--save", "60", "1", "--loglevel", "warning" ]
+        volumeMounts:
         - name: redis-data
-          persistentVolumeClaim:
-            claimName: redis-pvc
+          mountPath: /data
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-pvc
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -40,7 +40,7 @@ metadata:
   name: redis-pvc
   namespace: llm-router
 spec:
-  accessModes: ["ReadWriteOnce"]
+  accessModes: [ "ReadWriteOnce" ]
   resources:
     requests:
       storage: 1Gi
@@ -54,6 +54,6 @@ spec:
   selector:
     app: redis
   ports:
-    - port: 6379
-      targetPort: 6379
+  - port: 6379
+    targetPort: 6379
   type: ClusterIP
